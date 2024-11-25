@@ -4,8 +4,11 @@ const express = require('express')
 const path = require('path')
 const fs = require('fs')
 
+
+
 const bodyParser = require('body-parser')
 const multer = require('multer')
+const swaggerJSDoc = require('swagger-jsdoc')
 
 program
     .option('-h, --host <char>', 'server address')
@@ -33,6 +36,148 @@ if(!options.cache) {
 const app = express()
 app.use(bodyParser.text());
 app.use(multer().none());
+
+
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     Note:
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *           description: Назва нотатки
+ *         text:
+ *           type: string
+ *           description: Вміст нотатки
+ *
+ * /:
+ *   get:
+ *     summary: Головна сторінка
+ *     description: Повертає привітальне повідомлення.
+ *     responses:
+ *       200:
+ *         description: Успішна відповідь.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *               example: Hello World
+ *
+ * /notes:
+ *   get:
+ *     summary: Отримати всі нотатки
+ *     description: Повертає список усіх нотаток у кеші.
+ *     responses:
+ *       200:
+ *         description: Список нотаток.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Note'
+ *
+ * /notes/{name}:
+ *   get:
+ *     summary: Отримати нотатку
+ *     description: Повертає вміст нотатки за вказаною назвою.
+ *     parameters:
+ *       - in: path
+ *         name: name
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Назва нотатки
+ *     responses:
+ *       200:
+ *         description: Вміст нотатки.
+ *         content:
+ *           text/plain:
+ *             schema:
+ *               type: string
+ *       404:
+ *         description: Нотатку не знайдено.
+ *
+ *   put:
+ *     summary: Оновити нотатку
+ *     description: Оновлює вміст існуючої нотатки.
+ *     parameters:
+ *       - in: path
+ *         name: name
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Назва нотатки
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         text/plain:
+ *           schema:
+ *             type: string
+ *             example: Новий текст нотатки
+ *     responses:
+ *       201:
+ *         description: Нотатку успішно оновлено.
+ *       404:
+ *         description: Нотатку не знайдено.
+ *
+ *   delete:
+ *     summary: Видалити нотатку
+ *     description: Видаляє нотатку за вказаною назвою.
+ *     parameters:
+ *       - in: path
+ *         name: name
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Назва нотатки
+ *     responses:
+ *       200:
+ *         description: Нотатку успішно видалено.
+ *       404:
+ *         description: Нотатку не знайдено.
+ *
+ * /write:
+ *   post:
+ *     summary: Створити нотатку
+ *     description: Створює нову нотатку з вказаним ім'ям і вмістом.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               note_name:
+ *                 type: string
+ *                 description: Назва нотатки
+ *                 example: my_note
+ *               note:
+ *                 type: string
+ *                 description: Вміст нотатки
+ *                 example: Це нова нотатка.
+ *     responses:
+ *       201:
+ *         description: Нотатку успішно створено.
+ *       400:
+ *         description: Вміст нотатки порожній або нотатка з такою назвою вже існує.
+ *
+ * /UploadForm.html:
+ *   get:
+ *     summary: Завантажити HTML-форму
+ *     description: Завантажує HTML-форму для створення нотаток.
+ *     responses:
+ *       200:
+ *         description: Форма успішно завантажена.
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ *       500:
+ *         description: Помилка сервера.
+ */
 
 
 app.get('/', function (req, res) {
@@ -136,6 +281,24 @@ app.get('/UploadForm.html', (req, res) => {
     res.status(500).send('Failed to load HTML form');
   }
 })
+
+
+const swaggerUi = require('swagger-ui-express'); 
+const swaggerJsdoc = require('swagger-jsdoc'); 
+ 
+const options_swagger = { 
+  definition: { 
+    openapi: '3.0.0', 
+    info: { 
+      title: 'Моя документація для нотаток', 
+      version: '1.0.0', 
+    }, 
+  }, 
+  apis: ['./main.js'], 
+}; 
+ 
+const openapiSpecification = swaggerJsdoc(options_swagger); 
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
 app.listen(options.port, options.host, (req, res) => {
     console.log(`Server is working on http://${options.host}:${options.port}`)
